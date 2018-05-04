@@ -481,6 +481,7 @@ func (b *Backend) handleWALRollback(ctx context.Context, req *logical.Request) (
 type FieldSchema struct {
 	Type        FieldType
 	Default     interface{}
+	EnvVar      string
 	Description string
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -122,9 +123,19 @@ func (d *FieldData) GetOkErr(k string) (interface{}, bool, error) {
 }
 
 func (d *FieldData) getPrimitive(k string, schema *FieldSchema) (interface{}, bool, error) {
-	raw, ok := d.Raw[k]
-	if !ok {
-		return nil, false, nil
+	var raw interface{}
+	if schema.EnvVar != "" {
+		envVal := os.Getenv(schema.EnvVar)
+		if envVal != "" {
+			raw = envVal
+		}
+	}
+	if raw == nil {
+		var ok bool
+		raw, ok = d.Raw[k]
+		if !ok {
+			return nil, false, nil
+		}
 	}
 
 	switch schema.Type {

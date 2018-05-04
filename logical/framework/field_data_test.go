@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"os"
 	"reflect"
 	"testing"
 )
@@ -9,6 +10,7 @@ func TestFieldDataGet(t *testing.T) {
 	cases := map[string]struct {
 		Schema map[string]*FieldSchema
 		Raw    map[string]interface{}
+		Env    map[string]string
 		Key    string
 		Value  interface{}
 	}{
@@ -19,8 +21,26 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "bar",
 			},
+			nil,
 			"foo",
 			"bar",
+		},
+
+		"string type, environment value": {
+			map[string]*FieldSchema{
+				"foo": &FieldSchema{
+					Type:   TypeString,
+					EnvVar: "TESTENVVAR",
+				},
+			},
+			map[string]interface{}{
+				"foo": "bar",
+			},
+			map[string]string{
+				"TESTENVVAR": "baz",
+			},
+			"foo",
+			"baz",
 		},
 
 		"string type, int value": {
@@ -30,6 +50,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": 42,
 			},
+			nil,
 			"foo",
 			"42",
 		},
@@ -39,6 +60,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": &FieldSchema{Type: TypeString},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			"",
 		},
@@ -51,6 +73,7 @@ func TestFieldDataGet(t *testing.T) {
 				},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			"bar",
 		},
@@ -62,8 +85,26 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": 42,
 			},
+			nil,
 			"foo",
 			42,
+		},
+
+		"int type, environment value": {
+			map[string]*FieldSchema{
+				"foo": &FieldSchema{
+					Type:   TypeInt,
+					EnvVar: "TESTENVVAR",
+				},
+			},
+			map[string]interface{}{
+				"foo": 42,
+			},
+			map[string]string{
+				"TESTENVVAR": "43",
+			},
+			"foo",
+			43,
 		},
 
 		"bool type, bool value": {
@@ -73,6 +114,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": false,
 			},
+			nil,
 			"foo",
 			false,
 		},
@@ -86,6 +128,7 @@ func TestFieldDataGet(t *testing.T) {
 					"child": true,
 				},
 			},
+			nil,
 			"foo",
 			map[string]interface{}{
 				"child": true,
@@ -99,6 +142,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "42",
 			},
+			nil,
 			"foo",
 			42,
 		},
@@ -110,6 +154,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "42m",
 			},
+			nil,
 			"foo",
 			2520,
 		},
@@ -121,6 +166,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": 42,
 			},
+			nil,
 			"foo",
 			42,
 		},
@@ -132,6 +178,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": 42.0,
 			},
+			nil,
 			"foo",
 			42,
 		},
@@ -143,6 +190,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": nil,
 			},
+			nil,
 			"foo",
 			0,
 		},
@@ -154,6 +202,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{},
 			},
+			nil,
 			"foo",
 			[]interface{}{},
 		},
@@ -165,6 +214,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{123, "abc"},
 			},
+			nil,
 			"foo",
 			[]interface{}{123, "abc"},
 		},
@@ -176,6 +226,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{123, "abc"},
 			},
+			nil,
 			"foo",
 			[]string{"123", "abc"},
 		},
@@ -187,6 +238,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "abc",
 			},
+			nil,
 			"foo",
 			[]string{"abc"},
 		},
@@ -198,8 +250,26 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "value1",
 			},
+			nil,
 			"foo",
 			[]string{"value1"},
+		},
+
+		"comma string slice type, environment value": {
+			map[string]*FieldSchema{
+				"foo": &FieldSchema{
+					Type:   TypeCommaStringSlice,
+					EnvVar: "TESTENVVAR",
+				},
+			},
+			map[string]interface{}{
+				"foo": "value1",
+			},
+			map[string]string{
+				"TESTENVVAR": "value1,value2,value3",
+			},
+			"foo",
+			[]string{"value1", "value2", "value3"},
 		},
 
 		"comma string slice type, comma string with multi value": {
@@ -209,6 +279,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "value1,value2,value3",
 			},
+			nil,
 			"foo",
 			[]string{"value1", "value2", "value3"},
 		},
@@ -220,6 +291,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "",
 			},
+			nil,
 			"foo",
 			[]string{},
 		},
@@ -231,6 +303,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{"value1"},
 			},
+			nil,
 			"foo",
 			[]string{"value1"},
 		},
@@ -242,6 +315,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{"value1", "value2", "value3"},
 			},
+			nil,
 			"foo",
 			[]string{"value1", "value2", "value3"},
 		},
@@ -253,6 +327,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{},
 			},
+			nil,
 			"foo",
 			[]string{},
 		},
@@ -264,6 +339,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": 1,
 			},
+			nil,
 			"foo",
 			[]int{1},
 		},
@@ -275,6 +351,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []int{1, 2, 3},
 			},
+			nil,
 			"foo",
 			[]int{1, 2, 3},
 		},
@@ -286,6 +363,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "1,2,3",
 			},
+			nil,
 			"foo",
 			[]int{1, 2, 3},
 		},
@@ -297,6 +375,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "",
 			},
+			nil,
 			"foo",
 			[]int{},
 		},
@@ -308,6 +387,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{"1"},
 			},
+			nil,
 			"foo",
 			[]int{1},
 		},
@@ -319,6 +399,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{"1", "2", "3"},
 			},
+			nil,
 			"foo",
 			[]int{1, 2, 3},
 		},
@@ -330,6 +411,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{1, 2, 3},
 			},
+			nil,
 			"foo",
 			[]int{1, 2, 3},
 		},
@@ -341,6 +423,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{},
 			},
+			nil,
 			"foo",
 			[]int{},
 		},
@@ -351,6 +434,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "bar",
 			},
+			nil,
 			"foo",
 			"bar",
 		},
@@ -362,6 +446,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "bar.baz-bay123",
 			},
+			nil,
 			"foo",
 			"bar.baz-bay123",
 		},
@@ -377,6 +462,7 @@ func TestFieldDataGet(t *testing.T) {
 					"key3": 1,
 				},
 			},
+			nil,
 			"foo",
 			map[string]string{
 				"key1": "value1",
@@ -392,6 +478,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": []interface{}{"key1=value1", "key2=value2", "key3=1"},
 			},
+			nil,
 			"foo",
 			map[string]string{
 				"key1": "value1",
@@ -407,6 +494,7 @@ func TestFieldDataGet(t *testing.T) {
 			map[string]interface{}{
 				"foo": "key1=value1",
 			},
+			nil,
 			"foo",
 			map[string]string{
 				"key1": "value1",
@@ -418,6 +506,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeNameString},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			"",
 		},
@@ -427,6 +516,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeString},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			"",
 		},
@@ -436,6 +526,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeInt},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			0,
 		},
@@ -445,6 +536,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeBool},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			false,
 		},
@@ -454,6 +546,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeMap},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			map[string]interface{}{},
 		},
@@ -463,6 +556,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeDurationSecond},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			0,
 		},
@@ -472,6 +566,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeSlice},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			[]interface{}{},
 		},
@@ -481,6 +576,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeStringSlice},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			[]string{},
 		},
@@ -490,6 +586,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeCommaStringSlice},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			[]string{},
 		},
@@ -499,6 +596,7 @@ func TestFieldDataGet(t *testing.T) {
 				"foo": {Type: TypeKVPairs},
 			},
 			map[string]interface{}{},
+			nil,
 			"foo",
 			map[string]string{},
 		},
@@ -510,6 +608,12 @@ func TestFieldDataGet(t *testing.T) {
 			Schema: tc.Schema,
 		}
 
+		envOld := make(map[string]string)
+		for name, val := range tc.Env {
+			envOld[name] = os.Getenv(name)
+			os.Setenv(name, val)
+		}
+
 		if err := data.Validate(); err != nil {
 			t.Fatalf("bad: %#v", err)
 		}
@@ -519,6 +623,15 @@ func TestFieldDataGet(t *testing.T) {
 			t.Fatalf(
 				"bad: %s\n\nExpected: %#v\nGot: %#v",
 				name, tc.Value, actual)
+		}
+
+		// Reset environment
+		for name, val := range envOld {
+			if val == "" {
+				os.Unsetenv(name)
+			} else {
+				os.Setenv(name, val)
+			}
 		}
 	}
 }
